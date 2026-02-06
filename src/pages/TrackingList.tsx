@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import type { TrackingConfig } from '../lib/types';
-import { Plus } from 'lucide-react';
+import { Plus, FileSearch } from 'lucide-react';
 
 export function TrackingList() {
     const [trackings, setTrackings] = useState<TrackingConfig[]>([]);
