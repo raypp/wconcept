@@ -29,7 +29,7 @@ export const MOCK_CONTENTS = Array.from({ length: 350 }, (_, i) => ({
 export const MOCK_TRACKINGS: TrackingConfig[] = [
     {
         id: 't1',
-        title: '1월 W크리에이터',
+        title: 'S/S W크리에이터',
         keywords: ['#공구', '#광고', '#뷰티', '#피부'],
         creators: MOCK_CREATORS.slice(0, 4),
         startDate: '2025-12-15',

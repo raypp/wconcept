@@ -433,11 +433,11 @@ export function TrackingDetail() {
                     >
                         <div className="flex items-center justify-center gap-1 mb-1">
                             <p className="text-xs text-gray-500">급상승 콘텐츠 수</p>
-                            <Search className="h-3.5 w-3.5 text-gray-400 group-hover:text-green-600 transition-colors" />
                         </div>
                         <div className="flex items-center justify-center gap-1">
                             <TrendingUp className="h-4 w-4 text-green-500" />
                             <p className="text-2xl font-bold text-gray-900">{summary.risingContentCount}<span className="text-sm font-normal">개</span></p>
+                            <Search className="h-3.5 w-3.5 text-gray-400 group-hover:text-green-600 transition-colors" />
                         </div>
                     </div>
                 </div>
@@ -759,21 +759,13 @@ export function TrackingDetail() {
                                 </div>
 
                                 <div className="p-2">
-                                    <p className="text-[10px] text-gray-700 line-clamp-2 mb-1.5 leading-tight">
+                                    <p className="text-[9px] text-gray-500 mb-0.5">
+                                        {content.type.includes('릴스') ? '인스타그램 릴스' : content.type.includes('피드') ? '인스타그램 피드' : content.type.includes('쇼츠') ? '유튜브 쇼츠' : '유튜브 영상'}
+                                    </p>
+                                    <p className="text-[10px] text-gray-700 line-clamp-2 leading-tight">
                                         {content.description}
                                     </p>
-                                    <p className="text-[9px] text-gray-400 mb-2">{content.uploadDate}</p>
-
-                                    <div className="flex items-center gap-2 text-gray-400">
-                                        <div className="flex items-center gap-0.5">
-                                            <Eye className="w-3 h-3" />
-                                            <span className="text-[9px]">{content.views >= 10000 ? (content.views / 10000).toFixed(1) + '만' : content.views.toLocaleString()}</span>
-                                        </div>
-                                        <div className="flex items-center gap-0.5">
-                                            <Heart className="w-3 h-3" />
-                                            <span className="text-[9px]">{content.likes.toLocaleString()}</span>
-                                        </div>
-                                    </div>
+                                    <p className="text-[9px] text-gray-400 mt-1">{content.uploadDate}</p>
                                 </div>
                             </div>
                         ))}
@@ -920,8 +912,7 @@ export function TrackingDetail() {
                                         <th className="px-3 py-3 text-right font-medium w-20">조회 수</th>
                                         <th className="px-3 py-3 text-right font-medium w-20">좋아요</th>
                                         <th className="px-3 py-3 text-right font-medium w-16">댓글</th>
-                                        <th className="px-3 py-3 text-right font-medium w-16">공유</th>
-                                        <th className="px-3 py-3 text-right font-medium w-16">저장</th>
+
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
@@ -963,8 +954,7 @@ export function TrackingDetail() {
                                             <td className="px-3 py-3 text-right text-gray-900 text-xs font-medium">{content.views.toLocaleString()}</td>
                                             <td className="px-3 py-3 text-right text-gray-900 text-xs">{content.likes.toLocaleString()}</td>
                                             <td className="px-3 py-3 text-right text-gray-600 text-xs">{content.comments.toLocaleString()}</td>
-                                            <td className="px-3 py-3 text-right text-gray-600 text-xs">{content.shares.toLocaleString()}</td>
-                                            <td className="px-3 py-3 text-right text-gray-600 text-xs">{content.saves.toLocaleString()}</td>
+
                                         </tr>
                                     ))}
                                 </tbody>
@@ -986,7 +976,7 @@ export function TrackingDetail() {
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-sm font-medium text-gray-700">전체 크리에이터 랭킹 Top {sortedCreators.length}</h3>
                             <div className="flex items-center gap-2">
-                                {/* 평균/합산 토글 — 항상 표시 */}
+                                {/* 평균/누적 토글 — 항상 표시 */}
                                 <div className="flex bg-gray-100 p-0.5 rounded-lg">
                                     <button
                                         onClick={() => setCreatorViewMode('avg')}
@@ -998,7 +988,7 @@ export function TrackingDetail() {
                                         onClick={() => setCreatorViewMode('sum')}
                                         className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${creatorViewMode === 'sum' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                                     >
-                                        합산
+                                        누적
                                     </button>
                                 </div>
                                 <select
@@ -1022,22 +1012,17 @@ export function TrackingDetail() {
                                         <th className="px-3 py-3 text-right font-medium w-16">콘텐츠</th>
                                         <th className="px-3 py-3 text-left font-medium w-24">유형</th>
                                         <th className="px-3 py-3 text-right font-medium w-24">
-                                            {creatorViewMode === 'avg' ? '평균 ' : '합산 '}조회
+                                            {creatorViewMode === 'avg' ? '평균 ' : '누적 '}조회
                                         </th>
                                         <th className="px-3 py-3 text-right font-medium w-24">
-                                            {creatorViewMode === 'avg' ? '평균 ' : '합산 '}좋아요
+                                            {creatorViewMode === 'avg' ? '평균 ' : '누적 '}좋아요
                                         </th>
                                         <th className="px-3 py-3 text-right font-medium w-20">
-                                            {creatorViewMode === 'avg' ? '평균 ' : '합산 '}댓글
+                                            {creatorViewMode === 'avg' ? '평균 ' : '누적 '}댓글
                                         </th>
-                                        <th className="px-3 py-3 text-right font-medium w-20">
-                                            {creatorViewMode === 'avg' ? '평균 ' : '합산 '}공유
-                                        </th>
-                                        <th className="px-3 py-3 text-right font-medium w-20">
-                                            {creatorViewMode === 'avg' ? '평균 ' : '합산 '}저장
-                                        </th>
+
                                         <th className="px-3 py-3 text-right font-medium w-28">
-                                            {creatorViewMode === 'avg' ? '평균 ' : '합산 '}인게이지먼트
+                                            {creatorViewMode === 'avg' ? '평균 ' : '누적 '}인게이지먼트
                                         </th>
                                     </tr>
                                 </thead>
@@ -1077,8 +1062,7 @@ export function TrackingDetail() {
                                                 <td className="px-3 py-3 text-right text-gray-900 text-xs font-medium">{val(creator.avgViews).toLocaleString()}</td>
                                                 <td className="px-3 py-3 text-right text-gray-900 text-xs">{val(creator.avgLikes).toLocaleString()}</td>
                                                 <td className="px-3 py-3 text-right text-gray-600 text-xs">{val(creator.avgComments).toLocaleString()}</td>
-                                                <td className="px-3 py-3 text-right text-gray-600 text-xs">{val(creator.avgShares).toLocaleString()}</td>
-                                                <td className="px-3 py-3 text-right text-gray-600 text-xs">{val(creator.avgSaves).toLocaleString()}</td>
+
                                                 <td className="px-3 py-3 text-right text-gray-900 text-xs font-medium">{val(creator.avgEngagement).toLocaleString()}</td>
                                             </tr>
                                         );

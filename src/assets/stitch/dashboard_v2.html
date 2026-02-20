@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="ko"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>콘텐츠 성과 대시보드</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Nanum+Gothic:wght@400;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#FF5A5F", 
+                        "primary-hover": "#E04F54",
+                        "background-light": "#F9FAFB",
+                        "background-dark": "#111827",
+                        "surface-light": "#FFFFFF",
+                        "surface-dark": "#1F2937",
+                        "border-light": "#E5E7EB",
+                        "border-dark": "#374151",
+                        "text-main-light": "#111827",
+                        "text-main-dark": "#F9FAFB",
+                        "text-secondary-light": "#6B7280",
+                        "text-secondary-dark": "#9CA3AF",
+                    },
+                    fontFamily: {
+                        display: ["Nanum Gothic", "Inter", "sans-serif"],
+                        body: ["Nanum Gothic", "Inter", "sans-serif"],
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.75rem", // 12px
+                        'xl': "1rem",
+                        '2xl': "1.5rem",
+                    },
+                    boxShadow: {
+                        'soft': '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
+                        'glow': '0 0 15px rgba(255, 90, 95, 0.3)',
+                    }
+                },
+            },
+        };
+    </script>
+<style>
+        body {
+            font-family: 'Nanum Gothic', 'Inter', sans-serif;
+        }
+        .horizontal-scroll::-webkit-scrollbar {
+            height: 6px;
+        }
+        .horizontal-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .horizontal-scroll::-webkit-scrollbar-thumb {
+            background-color: #E5E7EB;
+            border-radius: 20px;
+        }
+        .dark .horizontal-scroll::-webkit-scrollbar-thumb {
+            background-color: #4B5563;
+        }.custom-checkbox:checked {
+            background-color: #FF5A5F;
+            border-color: #FF5A5F;
+        }
+        .custom-checkbox:focus {
+            ring-color: #FF5A5F;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-text-main-light dark:text-text-main-dark transition-colors duration-300 min-h-screen p-4 md:p-8">
+<header class="max-w-7xl mx-auto mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div>
+<h1 class="text-3xl font-bold tracking-tight text-text-main-light dark:text-text-main-dark mb-2">
+            콘텐츠 성과 트렌드
+        </h1>
+<p class="text-text-secondary-light dark:text-text-secondary-dark">
+            수집 기간 동안 참여 크리에이터가 게시한 콘텐츠의 일별 성과 데이터입니다.
+        </p>
+</div>
+<div class="flex items-center gap-3">
+<button class="p-2 rounded-full bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark text-text-secondary-light dark:text-text-secondary-dark hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" onclick="document.documentElement.classList.toggle('dark')">
+<span class="material-icons-outlined">dark_mode</span>
+</button>
+<button class="flex items-center gap-2 bg-gray-900 hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-200 dark:text-gray-900 text-white px-5 py-2.5 rounded-DEFAULT font-medium transition-colors shadow-soft group">
+<span>상세 트래킹</span>
+<span class="material-icons-outlined text-sm group-hover:translate-x-0.5 transition-transform">open_in_new</span>
+</button>
+</div>
+</header>
+<main class="max-w-7xl mx-auto space-y-8">
+<section class="bg-surface-light dark:bg-surface-dark rounded-xl shadow-soft border border-border-light dark:border-border-dark p-4">
+<div class="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 mb-4 pb-4 border-b border-gray-100 dark:border-gray-800">
+<div class="flex flex-wrap items-center gap-3 w-full xl:w-auto">
+<div class="relative group w-full sm:w-auto">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-icons-outlined text-gray-400">calendar_today</span>
+</div>
+<input class="pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-800 border-none rounded-lg text-sm focus:ring-2 focus:ring-primary w-full sm:w-64 cursor-pointer text-text-main-light dark:text-text-main-dark placeholder-gray-400 dark:placeholder-gray-500 transition-all hover:bg-gray-100 dark:hover:bg-gray-700" placeholder="기간 선택" type="text" value="2023.12.30 - 2024.01.19"/>
+</div>
+<div class="h-6 w-px bg-gray-200 dark:bg-gray-700 hidden sm:block"></div>
+<div class="flex flex-wrap gap-2 items-center">
+<label class="inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" name="content_type_all" type="checkbox"/>
+<div class="px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 peer-checked:bg-gray-900 peer-checked:text-white dark:peer-checked:bg-white dark:peer-checked:text-gray-900 transition-all shadow-sm border border-transparent peer-checked:border-gray-900 dark:peer-checked:border-white">
+                            전체 선택
+                        </div>
+</label>
+<div class="w-px h-4 bg-gray-300 dark:bg-gray-600 mx-1 hidden sm:block"></div>
+<label class="inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" name="content_type" type="checkbox" value="insta_feed"/>
+<div class="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 peer-checked:border-primary peer-checked:bg-primary/10 peer-checked:text-primary transition-all flex items-center gap-1.5">
+<span class="material-icons-outlined text-base">photo_camera</span>
+                            인스타그램 피드
+                        </div>
+</label>
+<label class="inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" name="content_type" type="checkbox" value="insta_reels"/>
+<div class="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 peer-checked:border-primary peer-checked:bg-primary/10 peer-checked:text-primary transition-all flex items-center gap-1.5">
+<span class="material-icons-outlined text-base">movie</span>
+                            인스타그램 릴스
+                        </div>
+</label>
+<label class="inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" name="content_type" type="checkbox" value="yt_video"/>
+<div class="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 peer-checked:border-primary peer-checked:bg-primary/10 peer-checked:text-primary transition-all flex items-center gap-1.5">
+<span class="material-icons-outlined text-base">smart_display</span>
+                            유튜브 비디오
+                        </div>
+</label>
+<label class="inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" name="content_type" type="checkbox" value="yt_shorts"/>
+<div class="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 peer-checked:border-primary peer-checked:bg-primary/10 peer-checked:text-primary transition-all flex items-center gap-1.5">
+<span class="material-icons-outlined text-base">slow_motion_video</span>
+                            유튜브 쇼츠
+                        </div>
+</label>
+</div>
+</div>
+</div>
+<div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+<div class="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1 w-full sm:w-auto">
+<button class="flex-1 sm:flex-none px-4 py-1.5 rounded-md text-sm font-medium bg-white dark:bg-gray-700 text-primary shadow-sm transition-all">일간</button>
+<button class="flex-1 sm:flex-none px-4 py-1.5 rounded-md text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark hover:text-text-main-light dark:hover:text-text-main-dark transition-all">누적</button>
+</div>
+<div class="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1 overflow-x-auto w-full sm:w-auto horizontal-scroll">
+<button class="whitespace-nowrap flex-1 sm:flex-none px-4 py-1.5 rounded-md text-sm font-medium bg-white dark:bg-gray-700 text-primary shadow-sm transition-all">조회수</button>
+<button class="whitespace-nowrap flex-1 sm:flex-none px-4 py-1.5 rounded-md text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark hover:text-text-main-light dark:hover:text-text-main-dark transition-all">좋아요</button>
+<button class="whitespace-nowrap flex-1 sm:flex-none px-4 py-1.5 rounded-md text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark hover:text-text-main-light dark:hover:text-text-main-dark transition-all">댓글</button>
+<button class="whitespace-nowrap flex-1 sm:flex-none px-4 py-1.5 rounded-md text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark hover:text-text-main-light dark:hover:text-text-main-dark transition-all">참여</button>
+</div>
+</div>
+</section>
+<section class="bg-surface-light dark:bg-surface-dark rounded-xl shadow-soft border border-border-light dark:border-border-dark overflow-hidden">
+<div class="p-6">
+<div class="flex justify-between items-end mb-6">
+<div>
+<h3 class="text-lg font-semibold text-text-main-light dark:text-text-main-dark">전체 조회수 추이</h3>
+<p class="text-sm text-text-secondary-light dark:text-text-secondary-dark mt-1">선택한 모든 플랫폼의 합계 조회수입니다.</p>
+</div>
+<div class="text-right">
+<span class="block text-3xl font-bold text-text-main-light dark:text-text-main-dark">648,392</span>
+<span class="text-sm font-medium text-green-500 flex items-center justify-end gap-1">
+<span class="material-icons-outlined text-base">trending_up</span> +12.5% 전기 대비
+                        </span>
+</div>
+</div>
+<div class="relative h-80 w-full">
+<canvas id="performanceChart"></canvas>
+</div>
+</div>
+</section>
+<section>
+<div class="flex items-center justify-between mb-6">
+<div class="flex items-center gap-3">
+<h2 class="text-xl font-bold text-text-main-light dark:text-text-main-dark">하이라이트 (전체 기간)</h2>
+<span class="px-2.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-xs font-semibold text-text-secondary-light dark:text-text-secondary-dark border border-gray-200 dark:border-gray-700">조회수 상위 10개</span>
+</div>
+<a class="text-sm font-medium text-primary hover:text-primary-hover flex items-center gap-1" href="#">
+                전체보기 <span class="material-icons-outlined text-sm">arrow_forward</span>
+</a>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+<div class="group bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark overflow-hidden hover:shadow-lg hover:border-primary/30 transition-all duration-300">
+<div class="p-4 flex items-center gap-3 border-b border-border-light dark:border-border-dark bg-gray-50/50 dark:bg-gray-800/50">
+<div class="relative">
+<div class="w-10 h-10 rounded-full bg-pink-100 text-pink-600 flex items-center justify-center font-bold text-sm">P</div>
+<div class="absolute -bottom-1 -right-1 bg-white dark:bg-gray-800 rounded-full p-0.5">
+<span class="material-icons-outlined text-red-500 text-xs">smart_display</span>
+</div>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-sm font-semibold text-text-main-light dark:text-text-main-dark truncate">peng_pongping</p>
+<p class="text-xs text-text-secondary-light dark:text-text-secondary-dark truncate">유튜브 비디오</p>
+</div>
+</div>
+<div class="relative aspect-[4/5] bg-gray-200 dark:bg-gray-700">
+<img alt="Content thumbnail" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAbhnS018rTz9qBpKuKBGQDzCvoyD7jY9MOmaVFXxxZm2OL-63L5gAuKO8Y4joJBlIS9uBOGWb3pCdzKsn13h-pFrMg_CU586L2wx4s-pQAOI-j-SLpRs6OX31n9IeSpl_QVnI1DXYYUx2SazhYbTaeYig5WQ_6kc1OZxyCPy5KbAB0vpRP6QoHijmE4BkyRDfNGUwIt5rsxavwmidEZNl-yj4qGJvJOOOOI33BCvjCuqUX-Q-iw8_2PiABUZ8N1TXnlc_rtP2hwS0"/>
+<div class="absolute top-3 left-3 bg-yellow-400 text-yellow-900 text-xs font-bold px-2.5 py-1 rounded-md shadow-sm flex items-center gap-1">
+<span class="material-icons-outlined text-xs">emoji_events</span> 1st
+                    </div>
+<div class="absolute bottom-3 right-3 bg-black/70 backdrop-blur-sm text-white text-xs font-medium px-2 py-1 rounded">
+                        비디오
+                    </div>
+</div>
+<div class="p-4 space-y-3">
+<p class="text-sm text-text-main-light dark:text-text-main-dark line-clamp-2 leading-relaxed">
+                        Winter skincare routine with the new moisturizing cream...
+                    </p>
+<div class="flex items-center justify-between text-xs text-text-secondary-light dark:text-text-secondary-dark pt-2 border-t border-border-light dark:border-border-dark">
+<span>2024.01.10</span>
+<span class="flex items-center gap-1 font-medium text-text-main-light dark:text-text-main-dark">
+<span class="material-icons-outlined text-xs">visibility</span> 124k
+                            </span>
+</div>
+</div>
+</div>
+<div class="group bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark overflow-hidden hover:shadow-lg hover:border-primary/30 transition-all duration-300">
+<div class="p-4 flex items-center gap-3 border-b border-border-light dark:border-border-dark bg-gray-50/50 dark:bg-gray-800/50">
+<div class="relative">
+<div class="w-10 h-10 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center font-bold text-sm">D</div>
+<div class="absolute -bottom-1 -right-1 bg-white dark:bg-gray-800 rounded-full p-0.5">
+<span class="material-icons-outlined text-pink-500 text-xs">movie</span>
+</div>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-sm font-semibold text-text-main-light dark:text-text-main-dark truncate">daily_mina</p>
+<p class="text-xs text-text-secondary-light dark:text-text-secondary-dark truncate">인스타그램 릴스</p>
+</div>
+</div>
+<div class="relative aspect-[4/5] bg-gray-200 dark:bg-gray-700">
+<img alt="Content thumbnail" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBRytw3TZ4IHXSrik10ReYV5tuabf8mX4fPrzkjKdG8Bvb-JUZyGChmsP3P1x1UwIhgXzZUKVSifsIWv49r1bH4cEx3chboPu2BnkWtuu0oeB9pcHEVeAi5fy4ESDdB3CRD9qVyQlG_7gUBCyFHyzzK2tGe1cYAAXca29OtC0EiSza4FOczddbeEKUbhcnHItSwMFmVuYVJtYNpy62MdLOCLzOFTiN57EfDXDMgqFc-4D4S7XZ8ogsOIAJKC_SDFCG3k-nWjO4XMCc"/>
+<div class="absolute top-3 left-3 bg-gray-300 text-gray-800 text-xs font-bold px-2.5 py-1 rounded-md shadow-sm">
+                        2nd
+                    </div>
+<div class="absolute bottom-3 right-3 bg-black/70 backdrop-blur-sm text-white text-xs font-medium px-2 py-1 rounded">
+                        릴스
+                    </div>
+</div>
+<div class="p-4 space-y-3">
+<p class="text-sm text-text-main-light dark:text-text-main-dark line-clamp-2 leading-relaxed">
+                        Unboxing the limited edition package! So excited to try...
+                    </p>
+<div class="flex items-center justify-between text-xs text-text-secondary-light dark:text-text-secondary-dark pt-2 border-t border-border-light dark:border-border-dark">
+<span>2024.01.09</span>
+<span class="flex items-center gap-1 font-medium text-text-main-light dark:text-text-main-dark">
+<span class="material-icons-outlined text-xs">visibility</span> 98k
+                            </span>
+</div>
+</div>
+</div>
+<div class="group bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark overflow-hidden hover:shadow-lg hover:border-primary/30 transition-all duration-300">
+<div class="p-4 flex items-center gap-3 border-b border-border-light dark:border-border-dark bg-gray-50/50 dark:bg-gray-800/50">
+<div class="relative">
+<div class="w-10 h-10 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center font-bold text-sm">C</div>
+<div class="absolute -bottom-1 -right-1 bg-white dark:bg-gray-800 rounded-full p-0.5">
+<span class="material-icons-outlined text-pink-500 text-xs">photo_camera</span>
+</div>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-sm font-semibold text-text-main-light dark:text-text-main-dark truncate">ch__n1</p>
+<p class="text-xs text-text-secondary-light dark:text-text-secondary-dark truncate">인스타그램 피드</p>
+</div>
+</div>
+<div class="relative aspect-[4/5] bg-gray-200 dark:bg-gray-700">
+<img alt="Content thumbnail" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDx4C1NhqVw9Irs7Clo1yfr--PDeW36-QW0SroYSr-Cqd2Rpq_KU1poVl9NVPIkeXeRSBnDwh4DV-LxbmkwyodDfBNemCvlenZx_Vf8Bu8UmxZoty8eu3uoIGIhyfnRVZV_P-bhklBevcmOhq5ihzHNcNXvYg42cNvy2S7uhQd_GxaV90J5Uc2X277w0CXpaZL7CgOIKPgsBd01b-ywmZCXe9ZWtiBNybkvOXinHFuRrrbhYxBaqjS5H-5j07RAhbumZCZbx2sF5tQ"/>
+<div class="absolute top-3 left-3 bg-orange-200 text-orange-900 text-xs font-bold px-2.5 py-1 rounded-md shadow-sm">
+                        3rd
+                    </div>
+<div class="absolute bottom-3 right-3 bg-black/70 backdrop-blur-sm text-white text-xs font-medium px-2 py-1 rounded">
+                        피드
+                    </div>
+</div>
+<div class="p-4 space-y-3">
+<p class="text-sm text-text-main-light dark:text-text-main-dark line-clamp-2 leading-relaxed">
+                        My go-to bag for everyday use. Fits everything I need.
+                    </p>
+<div class="flex items-center justify-between text-xs text-text-secondary-light dark:text-text-secondary-dark pt-2 border-t border-border-light dark:border-border-dark">
+<span>2024.01.08</span>
+<span class="flex items-center gap-1 font-medium text-text-main-light dark:text-text-main-dark">
+<span class="material-icons-outlined text-xs">visibility</span> 85k
+                            </span>
+</div>
+</div>
+</div>
+<div class="group bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark overflow-hidden hover:shadow-lg hover:border-primary/30 transition-all duration-300">
+<div class="p-4 flex items-center gap-3 border-b border-border-light dark:border-border-dark bg-gray-50/50 dark:bg-gray-800/50">
+<div class="relative">
+<div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm">B</div>
+<div class="absolute -bottom-1 -right-1 bg-white dark:bg-gray-800 rounded-full p-0.5">
+<span class="material-icons-outlined text-pink-500 text-xs">movie</span>
+</div>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-sm font-semibold text-text-main-light dark:text-text-main-dark truncate">bhoeee</p>
+<p class="text-xs text-text-secondary-light dark:text-text-secondary-dark truncate">인스타그램 릴스</p>
+</div>
+</div>
+<div class="relative aspect-[4/5] bg-gray-200 dark:bg-gray-700">
+<img alt="Content thumbnail" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAZckKNGPhGw9z50QxCNFOUr9ww1FPjDIpWg_6XORoe-1q-0oS4t03XsuIOIskZYlOki_3xJi434RH-prBlgnU2ICoSyfkRmc94S8klUdwyDzbaIFQa7WIE_YRKXtfM1XzRNaW6TRYzXQfjff7H9mx9Lx8UOkxo97BqyOxswyf5EZXZoPScdTCocPXr97RHtqrJ7LDMfUCLyqkhYnOeNPUHL6dxYpH-G6ke2gn3l88r0ZQsCvT2_aLfxm_2RdvnBqvSFbekwRQf12U"/>
+<div class="absolute top-3 left-3 bg-gray-800 text-white text-xs font-bold px-2.5 py-1 rounded-md shadow-sm">
+                        4th
+                    </div>
+<div class="absolute bottom-3 right-3 bg-black/70 backdrop-blur-sm text-white text-xs font-medium px-2 py-1 rounded">
+                        릴스
+                    </div>
+</div>
+<div class="p-4 space-y-3">
+<p class="text-sm text-text-main-light dark:text-text-main-dark line-clamp-2 leading-relaxed">
+                        Cafe hopping in Seoul. Found this hidden gem!
+                    </p>
+<div class="flex items-center justify-between text-xs text-text-secondary-light dark:text-text-secondary-dark pt-2 border-t border-border-light dark:border-border-dark">
+<span>2024.01.07</span>
+<span class="flex items-center gap-1 font-medium text-text-main-light dark:text-text-main-dark">
+<span class="material-icons-outlined text-xs">visibility</span> 72k
+                            </span>
+</div>
+</div>
+</div>
+<div class="group bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark overflow-hidden hover:shadow-lg hover:border-primary/30 transition-all duration-300">
+<div class="p-4 flex items-center gap-3 border-b border-border-light dark:border-border-dark bg-gray-50/50 dark:bg-gray-800/50">
+<div class="relative">
+<div class="w-10 h-10 rounded-full bg-green-100 text-green-600 flex items-center justify-center font-bold text-sm">S</div>
+<div class="absolute -bottom-1 -right-1 bg-white dark:bg-gray-800 rounded-full p-0.5">
+<span class="material-icons-outlined text-red-500 text-xs">smart_display</span>
+</div>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-sm font-semibold text-text-main-light dark:text-text-main-dark truncate">style_jieun</p>
+<p class="text-xs text-text-secondary-light dark:text-text-secondary-dark truncate">유튜브 쇼츠</p>
+</div>
+</div>
+<div class="relative aspect-[4/5] bg-gray-200 dark:bg-gray-700">
+<img alt="Content thumbnail" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCGhcD9VzFMMngz4ky0kNTw0eQ7CZlc-fl4u2_2_DgingSPCkETPyVTGZblNfnfhjON4p97wJJPMg8AEICjB4HB0syy_l2kwxJr70x8TeIPA7l9ehoKAIrqWAMu5G7iiUoHVR4pRTZq38pd-aLGESkK7XIMEpgA1cLRd4fQ7m4408L5-LvxK0lWO1d_nXnhSrRqJoXwLD9q8SVT34mVTCJwELu726IcyCtSSX2XE5Nt-XsLGKwjnfyXzjXNXenbxZ-C6bs5HXLg2VI"/>
+<div class="absolute top-3 left-3 bg-gray-800 text-white text-xs font-bold px-2.5 py-1 rounded-md shadow-sm">
+                        5th
+                    </div>
+<div class="absolute bottom-3 right-3 bg-black/70 backdrop-blur-sm text-white text-xs font-medium px-2 py-1 rounded">
+                        쇼츠
+                    </div>
+</div>
+<div class="p-4 space-y-3">
+<p class="text-sm text-text-main-light dark:text-text-main-dark line-clamp-2 leading-relaxed">
+                        Get ready with me for a date night. Simple makeup look.
+                    </p>
+<div class="flex items-center justify-between text-xs text-text-secondary-light dark:text-text-secondary-dark pt-2 border-t border-border-light dark:border-border-dark">
+<span>2024.01.06</span>
+<span class="flex items-center gap-1 font-medium text-text-main-light dark:text-text-main-dark">
+<span class="material-icons-outlined text-xs">visibility</span> 65k
+                            </span>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<script>
+    const ctx = document.getElementById('performanceChart').getContext('2d');
+    // Gradient for bars
+    let width, height, gradient;
+    function getGradient(ctx, chartArea) {
+        const chartWidth = chartArea.right - chartArea.left;
+        const chartHeight = chartArea.bottom - chartArea.top;
+        if (!gradient || width !== chartWidth || height !== chartHeight) {
+            width = chartWidth;
+            height = chartHeight;
+            gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+            gradient.addColorStop(0, '#FF5A5F');
+            gradient.addColorStop(1, '#FF8A8E');
+        }
+        return gradient;
+    }
+    const performanceChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['12-30', '12-31', '01-01', '01-02', '01-03', '01-04', '01-05', '01-06', '01-07', '01-08', '01-09', '01-10', '01-11', '01-12', '01-13', '01-14', '01-15', '01-16', '01-17', '01-18', '01-19'],
+            datasets: [{
+                label: '조회수',
+                data: [15000, 18000, 24000, 26000, 31000, 23000, 20000, 27000, 33000, 29000, 28000, 31000, 36000, 32000, 30000, 37000, 42000, 38000, 39000, 41000, 45000],
+                backgroundColor: function(context) {
+                    const chart = context.chart;
+                    const {ctx, chartArea} = chart;
+                    if (!chartArea) {
+                        return '#FF5A5F';
+                    }
+                    return getGradient(ctx, chartArea);
+                },
+                borderRadius: 6,
+                borderSkipped: false,
+                barPercentage: 0.6,
+                categoryPercentage: 0.8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    backgroundColor: '#1F2937',
+                    padding: 12,
+                    titleFont: { family: 'Nanum Gothic', size: 13 },
+                    bodyFont: { family: 'Nanum Gothic', size: 13 },
+                    cornerRadius: 8,
+                    displayColors: false,
+                    callbacks: {
+                        label: function(context) {
+                            return context.parsed.y.toLocaleString() + ' 조회수';
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: document.documentElement.classList.contains('dark') ? '#374151' : '#F3F4F6',
+                        drawBorder: false,
+                    },
+                    ticks: {
+                        font: { family: 'Nanum Gothic', size: 11 },
+                        color: '#9CA3AF',
+                        callback: function(value) {
+                            return value >= 1000 ? value/1000 + 'k' : value;
+                        }
+                    },
+                    border: { display: false }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        font: { family: 'Nanum Gothic', size: 11 },
+                        color: '#9CA3AF'
+                    },
+                    border: { display: false }
+                }
+            },
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+        }
+    });
+    // Simple theme observer to update chart grid colors when theme changes
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.type === "attributes" && mutation.attributeName === "class") {
+                const isDark = document.documentElement.classList.contains('dark');
+                performanceChart.options.scales.y.grid.color = isDark ? '#374151' : '#F3F4F6';
+                performanceChart.update();
+            }
+        });
+    });
+    observer.observe(document.documentElement, { attributes: true });
+</script>
+
+</body></html>
