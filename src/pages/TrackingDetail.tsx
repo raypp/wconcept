@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronDown, TrendingUp, Instagram, Youtube, Eye, Heart, Search, X, ExternalLink } from 'lucide-react';
+import { ChevronDown, TrendingUp, Instagram, Youtube, Eye, Heart, Search, X, ExternalLink, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { api, MOCK_SUMMARY, MOCK_DAILY_DATA, MOCK_CREATORS, MOCK_CONTENTS } from '../lib/api';
 import type { TrackingConfig } from '../lib/types';
 import { MetricCard } from '../components/MetricCard';
@@ -17,9 +17,9 @@ export function TrackingDetail() {
     const [trackings, setTrackings] = useState<TrackingConfig[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [showDropdown, setShowDropdown] = useState(false);
-    const [contentSortBy, setContentSortBy] = useState('조회 많은 순');
+    const [contentSort, setContentSort] = useState<{ key: string, direction: 'asc' | 'desc' }>({ key: 'views', direction: 'desc' });
     const [selectedContentTypes, setSelectedContentTypes] = useState<string[]>([]);
-    const [creatorSortBy, setCreatorSortBy] = useState('평균 조회수 높은 순');
+    const [creatorSort, setCreatorSort] = useState<{ key: string, direction: 'asc' | 'desc' }>({ key: 'avgViews', direction: 'desc' });
     const [hoveredContent, setHoveredContent] = useState<string | null>(null);
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
     const [rankingPeriod, setRankingPeriod] = useState('전체 기간');
@@ -86,31 +86,26 @@ export function TrackingDetail() {
         })).sort((a, b) => b.count - a.count);
     }, [contents]);
 
-    const contentSortOptions = [
-        '조회 많은 순',
-        '좋아요 많은 순',
-        '댓글 많은 순',
-        '저장 많은 순',
-        '공유 많은 순',
-        '업로드 최신순',
-        '업로드 오래된 순',
-    ];
+    const handleContentSort = (key: string) => {
+        setContentSort(prev => ({
+            key,
+            direction: prev.key === key && prev.direction === 'desc' ? 'asc' : 'desc'
+        }));
+    };
+
+    const handleCreatorSort = (key: string) => {
+        setCreatorSort(prev => ({
+            key,
+            direction: prev.key === key && prev.direction === 'desc' ? 'asc' : 'desc'
+        }));
+    };
+
+    const SortIcon = ({ columnKey, currentSort }: { columnKey: string, currentSort: { key: string, direction: 'asc' | 'desc' } }) => {
+        if (currentSort.key !== columnKey) return <ArrowUpDown className="w-3 h-3 ml-1 text-gray-400 inline" />;
+        return currentSort.direction === 'desc' ? <ArrowDown className="w-3 h-3 ml-1 text-gray-800 inline" /> : <ArrowUp className="w-3 h-3 ml-1 text-gray-800 inline" />;
+    };
 
     const periodOptions = ['전체 기간', '최근 7일', '최근 14일', '최근 30일'];
-
-    const creatorSortOptions = [
-        '조회 많은 순',
-        '좋아요 많은 순',
-        '댓글 많은 순',
-        '공유 많은 순',
-        '저장 많은 순',
-        '인게이지먼트 많은 순',
-        '업로드 콘텐츠 많은 순',
-        '팔로워 많은 순',
-    ];
-
-    // Metric sorts that support avg/sum toggle
-    const metricSorts = ['조회 많은 순', '좋아요 많은 순', '댓글 많은 순', '저장 많은 순', '공유 많은 순', '인게이지먼트 많은 순'];
 
     // All account names (union of content creators and creator list)
     const allCreatorNames = useMemo(() => {
@@ -146,20 +141,21 @@ export function TrackingDetail() {
 
         // Sort
         result.sort((a, b) => {
-            switch (contentSortBy) {
-                case '조회 많은 순': return b.views - a.views;
-                case '좋아요 많은 순': return b.likes - a.likes;
-                case '댓글 많은 순': return b.comments - a.comments;
-                case '저장 많은 순': return (b.saves || 0) - (a.saves || 0);
-                case '공유 많은 순': return (b.shares || 0) - (a.shares || 0);
-                case '업로드 최신순': return new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime();
-                case '업로드 오래된 순': return new Date(a.uploadDate).getTime() - new Date(b.uploadDate).getTime();
-                default: return 0;
+            let aVal: any = a[contentSort.key as keyof typeof a];
+            let bVal: any = b[contentSort.key as keyof typeof b];
+
+            if (contentSort.key === 'uploadDate') {
+                aVal = new Date(a.uploadDate).getTime();
+                bVal = new Date(b.uploadDate).getTime();
             }
+
+            if (aVal === bVal) return 0;
+            const modifier = contentSort.direction === 'desc' ? -1 : 1;
+            return (aVal > bVal ? 1 : -1) * modifier;
         });
 
         return result;
-    }, [contents, contentSortBy, selectedContentTypes, selectedCreators, followerMin, followerMax]);
+    }, [contents, contentSort, selectedContentTypes, selectedCreators, followerMin, followerMax]);
 
     // Paginated Contents
     const paginatedContents = useMemo(() => {
@@ -195,32 +191,26 @@ export function TrackingDetail() {
             result = result.filter(c => c.followers <= (followerMax as number));
         }
 
-        const getMetricValue = (c: typeof creators[0], sort: string) => {
-            const count = c.contentCount || 1;
-            const v = (avg: number | undefined) => creatorViewMode === 'avg' ? (avg || 0) : (avg || 0) * count;
-            switch (sort) {
-                case '조회 많은 순': return v(c.avgViews);
-                case '좋아요 많은 순': return v(c.avgLikes);
-                case '댓글 많은 순': return v(c.avgComments);
-                case '저장 많은 순': return v(c.avgSaves);
-                case '공유 많은 순': return v(c.avgShares);
-                case '인게이지먼트 많은 순': return v(c.avgEngagement);
-                default: return 0;
-            }
-        };
-
         result.sort((a, b) => {
-            if (metricSorts.includes(creatorSortBy)) {
-                return getMetricValue(b, creatorSortBy) - getMetricValue(a, creatorSortBy);
-            }
-            switch (creatorSortBy) {
-                case '업로드 콘텐츠 많은 순': return (b.contentCount || 0) - (a.contentCount || 0);
-                case '팔로워 많은 순': return b.followers - a.followers;
-                default: return 0;
-            }
+            const getVal = (c: typeof creators[0]) => {
+                if (creatorSort.key === 'followers') return c.followers;
+                if (creatorSort.key === 'contentCount') return c.contentCount || 0;
+                if (creatorSort.key === 'name') return c.name;
+
+                const count = c.contentCount || 1;
+                const avgVal = (c[creatorSort.key as keyof typeof c] as number) || 0;
+                return creatorViewMode === 'avg' ? avgVal : avgVal * count;
+            };
+
+            const aVal = getVal(a);
+            const bVal = getVal(b);
+
+            if (aVal === bVal) return 0;
+            const modifier = creatorSort.direction === 'desc' ? -1 : 1;
+            return (aVal > bVal ? 1 : -1) * modifier;
         });
         return result;
-    }, [creators, creatorSortBy, selectedCreators, selectedContentTypes, followerMin, followerMax, creatorViewMode, metricSorts]);
+    }, [creators, creatorSort, selectedCreators, selectedContentTypes, followerMin, followerMax, creatorViewMode]);
 
     // Paginated Creators
     const paginatedCreators = useMemo(() => {
@@ -980,15 +970,6 @@ export function TrackingDetail() {
                                     <span className="ml-2 text-xs text-blue-600 font-normal">{selectedContentIds.size}개 선택됨</span>
                                 )}
                             </h3>
-                            <select
-                                value={contentSortBy}
-                                onChange={(e) => setContentSortBy(e.target.value)}
-                                className="px-3 py-1.5 text-xs border rounded-md bg-white"
-                            >
-                                {contentSortOptions.map((opt) => (
-                                    <option key={opt} value={opt}>{opt}</option>
-                                ))}
-                            </select>
                         </div>
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm">
@@ -1010,13 +991,13 @@ export function TrackingDetail() {
                                             />
                                         </th>
                                         <th className="px-3 py-3 text-center font-medium w-10">No.</th>
-                                        <th className="px-3 py-3 text-left font-medium min-w-[260px]">콘텐츠</th>
-                                        <th className="px-3 py-3 text-left font-medium min-w-[160px]">계정/채널</th>
-                                        <th className="px-3 py-3 text-right font-medium w-24">팔로워 수</th>
-                                        <th className="px-3 py-3 text-right font-medium w-20">조회 수</th>
-                                        <th className="px-3 py-3 text-right font-medium w-20">좋아요 수</th>
-                                        <th className="px-3 py-3 text-right font-medium w-16">댓글 수</th>
-                                        <th className="px-3 py-3 text-right font-medium w-16">공유 수</th>
+                                        <th className="px-3 py-3 text-left font-medium min-w-[260px] cursor-pointer" onClick={() => handleContentSort('uploadDate')}>콘텐츠 <SortIcon columnKey="uploadDate" currentSort={contentSort} /></th>
+                                        <th className="px-3 py-3 text-left font-medium min-w-[160px] cursor-pointer" onClick={() => handleContentSort('creator')}>계정/채널 <SortIcon columnKey="creator" currentSort={contentSort} /></th>
+                                        <th className="px-3 py-3 text-right font-medium w-24 cursor-pointer" onClick={() => handleContentSort('followers')}>팔로워 수 <SortIcon columnKey="followers" currentSort={contentSort} /></th>
+                                        <th className="px-3 py-3 text-right font-medium w-20 cursor-pointer" onClick={() => handleContentSort('views')}>조회 수 <SortIcon columnKey="views" currentSort={contentSort} /></th>
+                                        <th className="px-3 py-3 text-right font-medium w-20 cursor-pointer" onClick={() => handleContentSort('likes')}>좋아요 수 <SortIcon columnKey="likes" currentSort={contentSort} /></th>
+                                        <th className="px-3 py-3 text-right font-medium w-16 cursor-pointer" onClick={() => handleContentSort('comments')}>댓글 수 <SortIcon columnKey="comments" currentSort={contentSort} /></th>
+                                        <th className="px-3 py-3 text-right font-medium w-16 cursor-pointer" onClick={() => handleContentSort('shares')}>공유 수 <SortIcon columnKey="shares" currentSort={contentSort} /></th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
@@ -1131,15 +1112,6 @@ export function TrackingDetail() {
                                         누적
                                     </button>
                                 </div>
-                                <select
-                                    value={creatorSortBy}
-                                    onChange={(e) => setCreatorSortBy(e.target.value)}
-                                    className="px-3 py-1.5 text-xs border rounded-md bg-white"
-                                >
-                                    {creatorSortOptions.map((opt) => (
-                                        <option key={opt} value={opt}>{opt}</option>
-                                    ))}
-                                </select>
                             </div>
                         </div>
                         <div className="overflow-x-auto">
@@ -1148,24 +1120,24 @@ export function TrackingDetail() {
                                     <tr>
                                         <th className="px-3 py-3 text-center font-medium w-10"></th>
                                         <th className="px-3 py-3 text-center font-medium w-12">순위</th>
-                                        <th className="px-3 py-3 text-left font-medium min-w-[200px]">계정/채널</th>
-                                        <th className="px-3 py-3 text-right font-medium w-20">팔로워</th>
-                                        <th className="px-3 py-3 text-right font-medium w-16">콘텐츠</th>
+                                        <th className="px-3 py-3 text-left font-medium min-w-[200px] cursor-pointer" onClick={() => handleCreatorSort('name')}>계정/채널 <SortIcon columnKey="name" currentSort={creatorSort} /></th>
+                                        <th className="px-3 py-3 text-right font-medium w-20 cursor-pointer" onClick={() => handleCreatorSort('followers')}>팔로워 <SortIcon columnKey="followers" currentSort={creatorSort} /></th>
+                                        <th className="px-3 py-3 text-right font-medium w-16 cursor-pointer" onClick={() => handleCreatorSort('contentCount')}>콘텐츠 <SortIcon columnKey="contentCount" currentSort={creatorSort} /></th>
                                         <th className="px-3 py-3 text-left font-medium w-24">유형</th>
-                                        <th className="px-3 py-3 text-right font-medium w-24">
-                                            {creatorViewMode === 'avg' ? '평균 ' : '누적 '}조회
+                                        <th className="px-3 py-3 text-right font-medium w-24 cursor-pointer" onClick={() => handleCreatorSort('avgViews')}>
+                                            {creatorViewMode === 'avg' ? '평균 ' : '누적 '}조회 <SortIcon columnKey="avgViews" currentSort={creatorSort} />
                                         </th>
-                                        <th className="px-3 py-3 text-right font-medium w-24">
-                                            {creatorViewMode === 'avg' ? '평균 ' : '누적 '}좋아요
+                                        <th className="px-3 py-3 text-right font-medium w-24 cursor-pointer" onClick={() => handleCreatorSort('avgLikes')}>
+                                            {creatorViewMode === 'avg' ? '평균 ' : '누적 '}좋아요 <SortIcon columnKey="avgLikes" currentSort={creatorSort} />
                                         </th>
-                                        <th className="px-3 py-3 text-right font-medium w-20">
-                                            {creatorViewMode === 'avg' ? '평균 ' : '누적 '}댓글
+                                        <th className="px-3 py-3 text-right font-medium w-20 cursor-pointer" onClick={() => handleCreatorSort('avgComments')}>
+                                            {creatorViewMode === 'avg' ? '평균 ' : '누적 '}댓글 <SortIcon columnKey="avgComments" currentSort={creatorSort} />
                                         </th>
-                                        <th className="px-3 py-3 text-right font-medium w-20">
-                                            {creatorViewMode === 'avg' ? '평균 ' : '누적 '}공유
+                                        <th className="px-3 py-3 text-right font-medium w-20 cursor-pointer" onClick={() => handleCreatorSort('avgShares')}>
+                                            {creatorViewMode === 'avg' ? '평균 ' : '누적 '}공유 <SortIcon columnKey="avgShares" currentSort={creatorSort} />
                                         </th>
-                                        <th className="px-3 py-3 text-right font-medium w-28">
-                                            {creatorViewMode === 'avg' ? '평균 ' : '누적 '}인게이지먼트
+                                        <th className="px-3 py-3 text-right font-medium w-28 cursor-pointer" onClick={() => handleCreatorSort('avgEngagement')}>
+                                            {creatorViewMode === 'avg' ? '평균 ' : '누적 '}인게이지먼트 <SortIcon columnKey="avgEngagement" currentSort={creatorSort} />
                                         </th>
                                     </tr>
                                 </thead>
