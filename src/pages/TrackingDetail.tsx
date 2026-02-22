@@ -34,6 +34,10 @@ export function TrackingDetail() {
     const [followerMin, setFollowerMin] = useState<number | ''>('');
     const [followerMax, setFollowerMax] = useState<number | ''>('');
     const [creatorViewMode, setCreatorViewMode] = useState<'avg' | 'sum'>('avg');
+    const [showContentTypeDropdown, setShowContentTypeDropdown] = useState(false);
+    const [showRankingContentTypeDropdown, setShowRankingContentTypeDropdown] = useState(false);
+    const [expandedCreatorId, setExpandedCreatorId] = useState<string | null>(null);
+    const [selectedContentIds, setSelectedContentIds] = useState<Set<string>>(new Set());
 
     const [contentPage, setContentPage] = useState(1);
     const [creatorPage, setCreatorPage] = useState(1);
@@ -529,11 +533,15 @@ export function TrackingDetail() {
 
                 {/* Chart Controls */}
                 <div className="mb-4">
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-4">
+                    {/* Compact single-row filter bar */}
+                    <div className="flex items-center justify-between mb-4 gap-3">
+                        {/* Left side: Date range + Content type dropdown */}
+                        <div className="flex items-center gap-2">
                             {/* Date Range Picker */}
-                            <div className="flex items-center gap-2">
-                                <span className="text-xs text-gray-500">기간 선택</span>
+                            <div className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 rounded-lg bg-white hover:border-gray-300 transition-colors">
+                                <svg className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
                                 <DatePicker
                                     selectsRange={true}
                                     startDate={startDate}
@@ -541,73 +549,108 @@ export function TrackingDetail() {
                                     onChange={(update) => setDateRange(update as [Date | null, Date | null])}
                                     locale={ko}
                                     dateFormat="yyyy.MM.dd"
-                                    className="px-3 py-1.5 text-xs border border-gray-200 rounded-lg w-48 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    className="text-xs text-gray-700 bg-transparent w-40 focus:outline-none cursor-pointer"
                                     placeholderText="기간 선택"
                                 />
                             </div>
-                            {/* Graph Mode Toggle */}
+
+                            {/* Divider */}
+                            <div className="w-px h-5 bg-gray-200" />
+
+                            {/* Content Type Dropdown */}
+                            <div className="relative">
+                                <button
+                                    onClick={() => setShowContentTypeDropdown(prev => !prev)}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 rounded-lg bg-white hover:border-gray-300 transition-colors text-xs text-gray-700"
+                                >
+                                    <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
+                                    </svg>
+                                    <span>콘텐츠 타입: </span>
+                                    <span className="font-medium">
+                                        {chartContentTypes.length === 0 ? '전체' : chartContentTypes.length === 1
+                                            ? (chartContentTypes[0].includes('릴스') ? '릴스' : chartContentTypes[0].includes('피드') ? '피드' : chartContentTypes[0].includes('쇼츠') ? '쇼츠' : '영상')
+                                            : `${chartContentTypes.length}개 선택`}
+                                    </span>
+                                    <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
+                                </button>
+                                {showContentTypeDropdown && (
+                                    <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 w-48 py-1">
+                                        <button
+                                            onClick={() => { setChartContentTypes([]); setShowContentTypeDropdown(false); }}
+                                            className={`w-full px-3 py-2 text-left text-xs hover:bg-gray-50 transition-colors ${chartContentTypes.length === 0 ? 'font-medium text-gray-900' : 'text-gray-600'}`}
+                                        >
+                                            전체
+                                        </button>
+                                        {['인스타그램 피드', '인스타그램 릴스', '유튜브 영상(롱폼)', '유튜브 쇼츠'].map((type) => {
+                                            const isSelected = chartContentTypes.includes(type);
+                                            const label = type.includes('릴스') ? '릴스' : type.includes('피드') ? '피드' : type.includes('쇼츠') ? '쇼츠' : '영상';
+                                            return (
+                                                <button
+                                                    key={type}
+                                                    onClick={() => {
+                                                        setChartContentTypes(prev =>
+                                                            prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
+                                                        );
+                                                    }}
+                                                    className="w-full px-3 py-2 text-left text-xs hover:bg-gray-50 transition-colors flex items-center justify-between"
+                                                >
+                                                    <span className={isSelected ? 'font-medium text-gray-900' : 'text-gray-600'}>{type}</span>
+                                                    {isSelected && (
+                                                        <svg className="w-3.5 h-3.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                                                        </svg>
+                                                    )}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Right side: 일간/누적 toggle + Metric toggle */}
+                        <div className="flex items-center gap-2">
+                            {/* 일간 / 누적 toggle */}
                             <div className="flex bg-gray-100 p-0.5 rounded-lg">
                                 <button
                                     onClick={() => setIsCumulativeView(false)}
-                                    className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${!isCumulativeView
+                                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${!isCumulativeView
                                         ? 'bg-white text-gray-900 shadow-sm'
-                                        : 'text-gray-500 hover:text-gray-900'
+                                        : 'text-gray-500 hover:text-gray-700'
                                         }`}
                                 >
-                                    일별 발생량
+                                    일간
                                 </button>
                                 <button
                                     onClick={() => setIsCumulativeView(true)}
-                                    className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${isCumulativeView
+                                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${isCumulativeView
                                         ? 'bg-white text-gray-900 shadow-sm'
-                                        : 'text-gray-500 hover:text-gray-900'
+                                        : 'text-gray-500 hover:text-gray-700'
                                         }`}
                                 >
                                     누적
                                 </button>
                             </div>
-                        </div>
-                        {/* Metric Toggle - Far Right */}
-                        <div className="flex bg-gray-100 p-1 rounded-lg">
-                            {['조회 수', '좋아요', '댓글', '인게이지먼트'].map((metric) => (
-                                <button
-                                    key={metric}
-                                    onClick={() => setChartMetric(metric)}
-                                    className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${chartMetric === metric
-                                        ? 'bg-white text-gray-900 shadow-sm'
-                                        : 'text-gray-500 hover:text-gray-900'
-                                        }`}
-                                >
-                                    {metric}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                    {/* Content Type Filter */}
-                    <div className="flex items-center gap-2 mb-4">
-                        <span className="text-xs text-gray-500">콘텐츠 유형:</span>
-                        <div className="flex flex-wrap gap-2">
-                            {['인스타그램 피드', '인스타그램 릴스', '유튜브 영상(롱폼)', '유튜브 쇼츠'].map((type) => {
-                                const isSelected = chartContentTypes.includes(type);
-                                return (
-                                    <button
-                                        key={type}
-                                        onClick={() => {
-                                            if (isSelected) {
-                                                setChartContentTypes(chartContentTypes.filter(t => t !== type));
-                                            } else {
-                                                setChartContentTypes([...chartContentTypes, type]);
-                                            }
-                                        }}
-                                        className={`px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ${isSelected
-                                            ? 'bg-blue-50 border-blue-300 text-blue-700'
-                                            : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'
-                                            }`}
-                                    >
-                                        {type}
-                                    </button>
-                                );
-                            })}
+
+                            {/* Metric Toggle */}
+                            <div className="flex bg-gray-100 p-0.5 rounded-lg">
+                                {['조회수', '좋아요', '댓글'].map((label) => {
+                                    const metricKey = label === '조회수' ? '조회 수' : label;
+                                    return (
+                                        <button
+                                            key={label}
+                                            onClick={() => setChartMetric(metricKey)}
+                                            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${chartMetric === metricKey
+                                                ? 'bg-white text-gray-900 shadow-sm'
+                                                : 'text-gray-500 hover:text-gray-700'
+                                                }`}
+                                        >
+                                            {label}
+                                        </button>
+                                    );
+                                })}
+                            </div>
                         </div>
                     </div>
                     <div className="h-[250px] w-full">
@@ -782,14 +825,17 @@ export function TrackingDetail() {
                     <h2 className="text-base font-bold text-gray-900">콘텐츠 랭킹 / 크리에이터 랭킹</h2>
                     <p className="text-xs text-gray-500">발행된 콘텐츠와 크리에이터 랭킹을 한 눈에 볼 수 있습니다.</p>
 
-                    {/* Row 1: 기간 + 콘텐츠 유형 */}
-                    <div className="flex flex-wrap items-center gap-3">
-                        <div className="flex items-center gap-2">
-                            <span className="text-xs text-gray-500 whitespace-nowrap">기간</span>
+                    {/* 공통 필터 — 한 줄 compact */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                        {/* 기간 */}
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 rounded-lg bg-white hover:border-gray-300 transition-colors">
+                            <svg className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
                             <select
                                 value={rankingPeriod}
                                 onChange={(e) => { setRankingPeriod(e.target.value); setContentPage(1); setCreatorPage(1); }}
-                                className="px-3 py-1.5 text-xs border rounded-lg bg-white"
+                                className="text-xs text-gray-700 bg-transparent border-none focus:outline-none cursor-pointer pr-1"
                             >
                                 {periodOptions.map((opt) => (
                                     <option key={opt} value={opt}>{opt}</option>
@@ -797,59 +843,91 @@ export function TrackingDetail() {
                             </select>
                         </div>
 
-                        <div className="w-px h-4 bg-gray-200" />
+                        <div className="w-px h-5 bg-gray-200" />
 
-                        <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-xs text-gray-500 whitespace-nowrap">콘텐츠 유형</span>
-                            {contentTypeOptions.slice(1).map((type) => (
-                                <button
-                                    key={type}
-                                    onClick={() => {
-                                        setSelectedContentTypes(prev =>
-                                            prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
+                        {/* 콘텐츠 유형 드롭다운 */}
+                        <div className="relative">
+                            <button
+                                onClick={() => setShowRankingContentTypeDropdown(prev => !prev)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 rounded-lg bg-white hover:border-gray-300 transition-colors text-xs text-gray-700"
+                            >
+                                <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
+                                </svg>
+                                <span>콘텐츠 타입: </span>
+                                <span className="font-medium">
+                                    {selectedContentTypes.length === 0 ? '전체' : `${selectedContentTypes.length}개 선택`}
+                                </span>
+                                <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
+                            </button>
+                            {showRankingContentTypeDropdown && (
+                                <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 w-52 py-1">
+                                    <button
+                                        onClick={() => { setSelectedContentTypes([]); setContentPage(1); setCreatorPage(1); setShowRankingContentTypeDropdown(false); }}
+                                        className={`w-full px-3 py-2 text-left text-xs hover:bg-gray-50 transition-colors ${selectedContentTypes.length === 0 ? 'font-medium text-gray-900' : 'text-gray-600'}`}
+                                    >
+                                        전체
+                                    </button>
+                                    {contentTypeOptions.slice(1).map((type) => {
+                                        const isSelected = selectedContentTypes.includes(type);
+                                        const label = type.includes('인스타그램') ? type.replace('인스타그램 ', '') : type.replace('유튜브 ', '');
+                                        return (
+                                            <button
+                                                key={type}
+                                                onClick={() => {
+                                                    setSelectedContentTypes(prev =>
+                                                        prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
+                                                    );
+                                                    setContentPage(1); setCreatorPage(1);
+                                                }}
+                                                className="w-full px-3 py-2 text-left text-xs hover:bg-gray-50 transition-colors flex items-center justify-between"
+                                            >
+                                                <span className={isSelected ? 'font-medium text-gray-900' : 'text-gray-600'}>{type}</span>
+                                                {isSelected && (
+                                                    <svg className="w-3.5 h-3.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                                                    </svg>
+                                                )}
+                                            </button>
                                         );
-                                        setContentPage(1); setCreatorPage(1);
-                                    }}
-                                    className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${selectedContentTypes.includes(type)
-                                        ? 'bg-gray-900 text-white border-gray-900'
-                                        : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'
-                                        }`}
-                                >
-                                    {type.includes('인스타그램') ? type.replace('인스타그램 ', '') : type.replace('유튜브 ', '')}
-                                </button>
-                            ))}
-                            {selectedContentTypes.length > 0 && (
-                                <button onClick={() => setSelectedContentTypes([])} className="text-xs text-gray-400 hover:text-gray-600">초기화</button>
+                                    })}
+                                </div>
                             )}
                         </div>
-                    </div>
 
-                    {/* Row 2: 팔로워 수 + 계정/채널 */}
-                    <div className="flex flex-wrap items-center gap-3">
-                        <div className="flex items-center gap-2">
-                            <span className="text-xs text-gray-500 whitespace-nowrap">팔로워 수</span>
+                        <div className="w-px h-5 bg-gray-200" />
+
+                        {/* 팔로워 수 */}
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 rounded-lg bg-white hover:border-gray-300 transition-colors">
+                            <svg className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            <span className="text-xs text-gray-500 whitespace-nowrap">팔로워</span>
                             <input
                                 type="number"
                                 placeholder="최솟값"
                                 value={followerMin}
                                 onChange={(e) => { setFollowerMin(e.target.value === '' ? '' : Number(e.target.value)); setContentPage(1); setCreatorPage(1); }}
-                                className="w-28 px-2.5 py-1.5 text-xs border rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-gray-300"
+                                className="w-20 text-xs text-gray-700 bg-transparent border-none focus:outline-none placeholder-gray-300"
                             />
-                            <span className="text-xs text-gray-400">~</span>
+                            <span className="text-xs text-gray-300">~</span>
                             <input
                                 type="number"
                                 placeholder="최댓값"
                                 value={followerMax}
                                 onChange={(e) => { setFollowerMax(e.target.value === '' ? '' : Number(e.target.value)); setContentPage(1); setCreatorPage(1); }}
-                                className="w-28 px-2.5 py-1.5 text-xs border rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-gray-300"
+                                className="w-20 text-xs text-gray-700 bg-transparent border-none focus:outline-none placeholder-gray-300"
                             />
                             {(followerMin !== '' || followerMax !== '') && (
-                                <button onClick={() => { setFollowerMin(''); setFollowerMax(''); }} className="text-xs text-gray-400 hover:text-gray-600">초기화</button>
+                                <button onClick={() => { setFollowerMin(''); setFollowerMax(''); }} className="text-gray-300 hover:text-gray-500 transition-colors">
+                                    <X className="w-3 h-3" />
+                                </button>
                             )}
                         </div>
 
-                        <div className="w-px h-4 bg-gray-200" />
+                        <div className="w-px h-5 bg-gray-200" />
 
+                        {/* 계정/채널 */}
                         <MultiSelectDropdown
                             label="계정/채널"
                             options={allCreatorNames}
@@ -887,7 +965,12 @@ export function TrackingDetail() {
                 {activeRankingTab === 'content' && (
                     <div>
                         <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-sm font-medium text-gray-700">전체 콘텐츠 랭킹 Top {filteredAndSortedContents.length}</h3>
+                            <h3 className="text-sm font-medium text-gray-700">
+                                전체 콘텐츠 랭킹 Top {filteredAndSortedContents.length}
+                                {selectedContentIds.size > 0 && (
+                                    <span className="ml-2 text-xs text-blue-600 font-normal">{selectedContentIds.size}개 선택됨</span>
+                                )}
+                            </h3>
                             <select
                                 value={contentSortBy}
                                 onChange={(e) => setContentSortBy(e.target.value)}
@@ -900,63 +983,111 @@ export function TrackingDetail() {
                         </div>
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm">
-                                <thead className="bg-gray-50 text-gray-500">
+                                <thead className="bg-gray-50 text-gray-500 text-xs">
                                     <tr>
-                                        <th className="px-3 py-3 text-center font-medium w-12">순위</th>
-                                        <th className="px-3 py-3 text-left font-medium w-20">콘텐츠</th>
-                                        <th className="px-3 py-3 text-left font-medium w-28">콘텐츠 유형</th>
-                                        <th className="px-3 py-3 text-left font-medium min-w-[200px]">콘텐츠 내용</th>
-                                        <th className="px-3 py-3 text-left font-medium w-24">업로드일</th>
-                                        <th className="px-3 py-3 text-left font-medium w-32">계정/채널</th>
+                                        {/* 전체 선택 체크박스 */}
+                                        <th className="px-3 py-3 w-10">
+                                            <input
+                                                type="checkbox"
+                                                className="rounded border-gray-300 cursor-pointer"
+                                                checked={selectedContentIds.size === paginatedContents.length && paginatedContents.length > 0}
+                                                onChange={(e) => {
+                                                    if (e.target.checked) {
+                                                        setSelectedContentIds(new Set(paginatedContents.map(c => c.id)));
+                                                    } else {
+                                                        setSelectedContentIds(new Set());
+                                                    }
+                                                }}
+                                            />
+                                        </th>
+                                        <th className="px-3 py-3 text-center font-medium w-10">No.</th>
+                                        <th className="px-3 py-3 text-left font-medium min-w-[260px]">콘텐츠</th>
+                                        <th className="px-3 py-3 text-left font-medium min-w-[160px]">계정/채널</th>
                                         <th className="px-3 py-3 text-right font-medium w-24">팔로워 수</th>
                                         <th className="px-3 py-3 text-right font-medium w-20">조회 수</th>
-                                        <th className="px-3 py-3 text-right font-medium w-20">좋아요</th>
-                                        <th className="px-3 py-3 text-right font-medium w-16">댓글</th>
-
+                                        <th className="px-3 py-3 text-right font-medium w-20">좋아요 수</th>
+                                        <th className="px-3 py-3 text-right font-medium w-16">댓글 수</th>
+                                        <th className="px-3 py-3 text-right font-medium w-16">공유 수</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
-                                    {paginatedContents.map((content, index) => (
-                                        <tr key={content.id} className="hover:bg-gray-50">
-                                            <td className="px-3 py-3 text-center text-gray-500 font-medium">
-                                                {(contentPage - 1) * ITEMS_PER_PAGE + index + 1}
-                                            </td>
-                                            <td className="px-3 py-3">
-                                                <div className="w-14 h-14 rounded-lg overflow-hidden bg-gray-100">
-                                                    <img src={content.thumbnail} alt="썸네일" className="w-full h-full object-cover" />
-                                                </div>
-                                            </td>
-                                            <td className="px-3 py-3">{getContentTypeBadge(content.type)}</td>
-                                            <td className="px-3 py-3 relative">
-                                                <div
-                                                    className="max-w-[200px] truncate text-gray-700 cursor-help"
-                                                    onMouseEnter={() => setHoveredContent(content.id)}
-                                                    onMouseLeave={() => setHoveredContent(null)}
-                                                >
-                                                    {content.description}
-                                                </div>
-                                                {hoveredContent === content.id && (
-                                                    <div className="absolute left-0 top-full mt-1 z-20 bg-gray-900 text-white text-xs p-3 rounded-lg shadow-lg max-w-xs whitespace-pre-wrap">
-                                                        {content.description}
+                                    {paginatedContents.map((content, index) => {
+                                        const isChecked = selectedContentIds.has(content.id);
+                                        return (
+                                            <tr
+                                                key={content.id}
+                                                className={`hover:bg-gray-50 transition-colors ${isChecked ? 'bg-blue-50/30' : ''}`}
+                                            >
+                                                {/* 체크박스 */}
+                                                <td className="px-3 py-4">
+                                                    <input
+                                                        type="checkbox"
+                                                        className="rounded border-gray-300 cursor-pointer"
+                                                        checked={isChecked}
+                                                        onChange={(e) => {
+                                                            const next = new Set(selectedContentIds);
+                                                            e.target.checked ? next.add(content.id) : next.delete(content.id);
+                                                            setSelectedContentIds(next);
+                                                        }}
+                                                    />
+                                                </td>
+                                                {/* 번호 */}
+                                                <td className="px-3 py-4 text-center text-gray-500 text-xs font-medium">
+                                                    {(contentPage - 1) * ITEMS_PER_PAGE + index + 1}
+                                                </td>
+                                                {/* 콘텐츠: 플랫폼 아이콘 + 썸네일 + 제목 + 날짜 */}
+                                                <td className="px-3 py-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="relative flex-shrink-0">
+                                                            <div className="w-14 h-14 rounded-lg overflow-hidden bg-gray-100">
+                                                                <img src={content.thumbnail} alt="썸네일" className="w-full h-full object-cover" />
+                                                            </div>
+                                                            {/* 플랫폼 아이콘 — 썸네일 위 좌상단 */}
+                                                            <div className="absolute -top-1 -left-1 bg-white rounded-full shadow p-0.5">
+                                                                {getPlatformIcon(content.type)}
+                                                            </div>
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <div
+                                                                className="text-xs text-gray-800 font-medium truncate max-w-[200px] cursor-help leading-snug"
+                                                                onMouseEnter={() => setHoveredContent(content.id)}
+                                                                onMouseLeave={() => setHoveredContent(null)}
+                                                            >
+                                                                {content.description}
+                                                            </div>
+                                                            <div className="text-xs text-gray-400 mt-1">{content.uploadDate}</div>
+                                                            {hoveredContent === content.id && (
+                                                                <div className="absolute z-20 bg-gray-900 text-white text-xs p-3 rounded-lg shadow-lg max-w-xs whitespace-pre-wrap mt-1">
+                                                                    {content.description}
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     </div>
-                                                )}
-                                            </td>
-                                            <td className="px-3 py-3 text-gray-600 text-xs">{content.uploadDate}</td>
-                                            <td className="px-3 py-3">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="h-7 w-7 rounded-full bg-gradient-to-br from-pink-300 to-orange-200 flex items-center justify-center text-white text-xs font-medium flex-shrink-0">
-                                                        {content.creator.charAt(0).toUpperCase()}
+                                                </td>
+                                                {/* 계정/채널: 아바타 + 이름 + 핸들 */}
+                                                <td className="px-3 py-4">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="h-9 w-9 rounded-full bg-gradient-to-br from-pink-300 to-orange-200 flex items-center justify-center text-white text-sm font-medium flex-shrink-0">
+                                                            {content.creator.charAt(0).toUpperCase()}
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <div className="flex items-center gap-1">
+                                                                <span className="text-xs font-medium text-gray-900 truncate">{content.creator}</span>
+                                                                {getPlatformIcon(content.type)}
+                                                            </div>
+                                                            <p className="text-xs text-gray-400 truncate">@{content.creator}</p>
+                                                        </div>
                                                     </div>
-                                                    <span className="text-gray-900 text-xs font-medium truncate">{content.creator}</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-3 py-3 text-right text-gray-900 text-xs">{content.followers.toLocaleString()}</td>
-                                            <td className="px-3 py-3 text-right text-gray-900 text-xs font-medium">{content.views.toLocaleString()}</td>
-                                            <td className="px-3 py-3 text-right text-gray-900 text-xs">{content.likes.toLocaleString()}</td>
-                                            <td className="px-3 py-3 text-right text-gray-600 text-xs">{content.comments.toLocaleString()}</td>
-
-                                        </tr>
-                                    ))}
+                                                </td>
+                                                {/* 지표 */}
+                                                <td className="px-3 py-4 text-right text-xs text-gray-700">{content.followers.toLocaleString()}</td>
+                                                <td className="px-3 py-4 text-right text-xs font-medium text-gray-900">{content.views.toLocaleString()}</td>
+                                                <td className="px-3 py-4 text-right text-xs text-gray-700">{content.likes.toLocaleString()}</td>
+                                                <td className="px-3 py-4 text-right text-xs text-gray-600">{content.comments.toLocaleString()}</td>
+                                                <td className="px-3 py-4 text-right text-xs text-gray-500">{(content.shares ?? 0).toLocaleString()}</td>
+                                            </tr>
+                                        );
+                                    })}
                                 </tbody>
                             </table>
                         </div>
@@ -1006,6 +1137,7 @@ export function TrackingDetail() {
                             <table className="w-full text-sm">
                                 <thead className="bg-gray-50 text-gray-500">
                                     <tr>
+                                        <th className="px-3 py-3 text-center font-medium w-10"></th>
                                         <th className="px-3 py-3 text-center font-medium w-12">순위</th>
                                         <th className="px-3 py-3 text-left font-medium min-w-[200px]">계정/채널</th>
                                         <th className="px-3 py-3 text-right font-medium w-20">팔로워</th>
@@ -1020,51 +1152,127 @@ export function TrackingDetail() {
                                         <th className="px-3 py-3 text-right font-medium w-20">
                                             {creatorViewMode === 'avg' ? '평균 ' : '누적 '}댓글
                                         </th>
-
                                         <th className="px-3 py-3 text-right font-medium w-28">
                                             {creatorViewMode === 'avg' ? '평균 ' : '누적 '}인게이지먼트
                                         </th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-100">
+                                <tbody>
                                     {paginatedCreators.map((creator, index) => {
                                         const cnt = creator.contentCount || 1;
                                         const val = (avg: number | undefined) =>
                                             creatorViewMode === 'avg' ? (avg ?? 0) : Math.round((avg ?? 0) * cnt);
-                                        return (
-                                            <tr key={creator.id} className="hover:bg-gray-50">
-                                                <td className="px-3 py-3 text-center text-gray-500 font-medium">
-                                                    {(creatorPage - 1) * ITEMS_PER_PAGE + index + 1}
-                                                </td>
-                                                <td className="px-3 py-3">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="h-9 w-9 rounded-full bg-gradient-to-br from-pink-300 to-orange-200 flex items-center justify-center text-white text-sm font-medium flex-shrink-0">
-                                                            {creator.name.charAt(0).toUpperCase()}
-                                                        </div>
-                                                        <div className="min-w-0">
-                                                            <div className="flex items-center gap-1.5">
-                                                                <span className="font-medium text-gray-900 text-xs">{creator.name}</span>
-                                                                {getPlatformIcon(creator.platform)}
-                                                            </div>
-                                                            <p className="text-xs text-gray-400 truncate">{creator.nickname} {creator.handle}</p>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td className="px-3 py-3 text-right text-gray-900 text-xs">{creator.followers.toLocaleString()}</td>
-                                                <td className="px-3 py-3 text-right text-gray-900 text-xs">{creator.contentCount}</td>
-                                                <td className="px-3 py-3">
-                                                    <div className="flex flex-wrap gap-1">
-                                                        {creator.contentTypes?.map((type, i) => (
-                                                            <span key={i} className="px-1.5 py-0.5 bg-gray-100 text-gray-600 text-xs rounded">{type}</span>
-                                                        ))}
-                                                    </div>
-                                                </td>
-                                                <td className="px-3 py-3 text-right text-gray-900 text-xs font-medium">{val(creator.avgViews).toLocaleString()}</td>
-                                                <td className="px-3 py-3 text-right text-gray-900 text-xs">{val(creator.avgLikes).toLocaleString()}</td>
-                                                <td className="px-3 py-3 text-right text-gray-600 text-xs">{val(creator.avgComments).toLocaleString()}</td>
+                                        const isExpanded = expandedCreatorId === creator.id;
+                                        const creatorContents = contents.filter(c => c.creator === creator.name);
 
-                                                <td className="px-3 py-3 text-right text-gray-900 text-xs font-medium">{val(creator.avgEngagement).toLocaleString()}</td>
-                                            </tr>
+                                        return (
+                                            <>
+                                                {/* 크리에이터 행 */}
+                                                <tr
+                                                    key={creator.id}
+                                                    className={`border-b border-gray-100 transition-colors ${isExpanded ? 'bg-blue-50/40' : 'hover:bg-gray-50'}`}
+                                                >
+                                                    {/* 아코디언 토글 */}
+                                                    <td className="px-2 py-3 text-center">
+                                                        <button
+                                                            onClick={() => setExpandedCreatorId(isExpanded ? null : creator.id)}
+                                                            className={`w-6 h-6 flex items-center justify-center rounded-md transition-all ${isExpanded ? 'bg-blue-100 text-blue-600' : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600'}`}
+                                                            title={isExpanded ? '접기' : '콘텐츠 보기'}
+                                                        >
+                                                            <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+                                                        </button>
+                                                    </td>
+                                                    <td className="px-3 py-3 text-center text-gray-500 font-medium">
+                                                        {(creatorPage - 1) * ITEMS_PER_PAGE + index + 1}
+                                                    </td>
+                                                    <td className="px-3 py-3">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="h-9 w-9 rounded-full bg-gradient-to-br from-pink-300 to-orange-200 flex items-center justify-center text-white text-sm font-medium flex-shrink-0">
+                                                                {creator.name.charAt(0).toUpperCase()}
+                                                            </div>
+                                                            <div className="min-w-0">
+                                                                <div className="flex items-center gap-1.5">
+                                                                    <span className="font-medium text-gray-900 text-xs">{creator.name}</span>
+                                                                    {getPlatformIcon(creator.platform)}
+                                                                </div>
+                                                                <p className="text-xs text-gray-400 truncate">{creator.nickname} {creator.handle}</p>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-3 py-3 text-right text-gray-900 text-xs">{creator.followers.toLocaleString()}</td>
+                                                    <td className="px-3 py-3 text-right text-gray-900 text-xs">{creator.contentCount}</td>
+                                                    <td className="px-3 py-3">
+                                                        <div className="flex flex-wrap gap-1">
+                                                            {creator.contentTypes?.map((type, i) => (
+                                                                <span key={i} className="px-1.5 py-0.5 bg-gray-100 text-gray-600 text-xs rounded">{type}</span>
+                                                            ))}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-3 py-3 text-right text-gray-900 text-xs font-medium">{val(creator.avgViews).toLocaleString()}</td>
+                                                    <td className="px-3 py-3 text-right text-gray-900 text-xs">{val(creator.avgLikes).toLocaleString()}</td>
+                                                    <td className="px-3 py-3 text-right text-gray-600 text-xs">{val(creator.avgComments).toLocaleString()}</td>
+                                                    <td className="px-3 py-3 text-right text-gray-900 text-xs font-medium">{val(creator.avgEngagement).toLocaleString()}</td>
+                                                </tr>
+
+                                                {/* 아코디언 콘텐츠 행 */}
+                                                {isExpanded && (
+                                                    <tr key={`${creator.id}-contents`} className="border-b border-gray-100">
+                                                        <td colSpan={10} className="p-0">
+                                                            <div className="bg-gray-50 border-t border-blue-100 px-6 py-4">
+                                                                <div className="flex items-center gap-2 mb-3">
+                                                                    <div className="w-1 h-4 bg-blue-400 rounded-full"></div>
+                                                                    <span className="text-xs font-semibold text-gray-700">
+                                                                        {creator.name}의 발행 콘텐츠
+                                                                    </span>
+                                                                    <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full font-medium">
+                                                                        {creatorContents.length}개
+                                                                    </span>
+                                                                </div>
+                                                                {creatorContents.length === 0 ? (
+                                                                    <p className="text-xs text-gray-400 py-4 text-center">발행된 콘텐츠가 없습니다.</p>
+                                                                ) : (
+                                                                    <div className="divide-y divide-gray-100">
+                                                                        {creatorContents.map((content) => (
+                                                                            <div
+                                                                                key={content.id}
+                                                                                className="flex items-center gap-3 py-2.5 px-1 hover:bg-gray-100/60 rounded-lg cursor-pointer transition-colors group"
+                                                                                onClick={() => window.open(content.url, '_blank')}
+                                                                            >
+                                                                                {/* 썸네일 */}
+                                                                                <div className="flex-shrink-0 w-12 h-12 rounded-md overflow-hidden bg-gray-200">
+                                                                                    <img src={content.thumbnail} alt="" className="w-full h-full object-cover" />
+                                                                                </div>
+                                                                                {/* 내용 */}
+                                                                                <div className="flex-1 min-w-0">
+                                                                                    <p className="text-xs text-gray-800 font-medium truncate leading-snug group-hover:text-blue-600 transition-colors">
+                                                                                        {content.description}
+                                                                                    </p>
+                                                                                    <p className="text-xs text-gray-400 mt-0.5">{content.uploadDate}</p>
+                                                                                </div>
+                                                                                {/* 지표 */}
+                                                                                <div className="flex-shrink-0 flex items-center gap-3 text-xs text-gray-500">
+                                                                                    <span className="flex items-center gap-1">
+                                                                                        <Eye className="w-3 h-3" />
+                                                                                        {content.views >= 10000 ? `${(content.views / 10000).toFixed(1)}만` : content.views.toLocaleString()}
+                                                                                    </span>
+                                                                                    <span className="flex items-center gap-1">
+                                                                                        <Heart className="w-3 h-3" />
+                                                                                        {content.likes.toLocaleString()}
+                                                                                    </span>
+                                                                                    <span className="flex items-center gap-1 w-12 text-right justify-end">
+                                                                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+                                                                                        {content.comments.toLocaleString()}
+                                                                                    </span>
+                                                                                </div>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                            </>
                                         );
                                     })}
                                 </tbody>
