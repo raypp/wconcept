@@ -627,7 +627,7 @@ export function TrackingDetail() {
                                         : 'text-gray-500 hover:text-gray-700'
                                         }`}
                                 >
-                                    일간
+                                    일별 집계
                                 </button>
                                 <button
                                     onClick={() => setIsCumulativeView(true)}
@@ -636,7 +636,7 @@ export function TrackingDetail() {
                                         : 'text-gray-500 hover:text-gray-700'
                                         }`}
                                 >
-                                    누적
+                                    누적 집계
                                 </button>
                             </div>
 
