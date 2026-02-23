@@ -22,7 +22,8 @@ export function TrackingDetail() {
     const [creatorSort, setCreatorSort] = useState<{ key: string, direction: 'asc' | 'desc' }>({ key: 'avgViews', direction: 'desc' });
     const [hoveredContent, setHoveredContent] = useState<string | null>(null);
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
-    const [rankingPeriod, setRankingPeriod] = useState('전체 기간');
+    const [rankingDateRange, setRankingDateRange] = useState<[Date | null, Date | null]>([null, null]);
+    const [rankingStartDate, rankingEndDate] = rankingDateRange;
     const [chartMetric, setChartMetric] = useState('조회 수');
     const [isCumulativeView, setIsCumulativeView] = useState(false);
     const [activeRankingTab, setActiveRankingTab] = useState<'content' | 'creator'>('content');
@@ -105,7 +106,6 @@ export function TrackingDetail() {
         return currentSort.direction === 'desc' ? <ArrowDown className="w-3 h-3 ml-1 text-gray-800 inline" /> : <ArrowUp className="w-3 h-3 ml-1 text-gray-800 inline" />;
     };
 
-    const periodOptions = ['전체 기간', '최근 7일', '최근 14일', '최근 30일'];
 
     // All account names (union of content creators and creator list)
     const allCreatorNames = useMemo(() => {
@@ -117,6 +117,17 @@ export function TrackingDetail() {
     // Filter and Sort Contents
     const filteredAndSortedContents = useMemo(() => {
         let result = [...contents];
+
+        // Filter by Content Date
+        if (rankingStartDate && rankingEndDate) {
+            result = result.filter(content => {
+                const contentDate = new Date(content.uploadDate);
+                // Zero out time for inclusive comparison
+                const start = new Date(rankingStartDate).setHours(0, 0, 0, 0);
+                const end = new Date(rankingEndDate).setHours(23, 59, 59, 999);
+                return contentDate.getTime() >= start && contentDate.getTime() <= end;
+            });
+        }
 
         // Filter by Content Type
         if (selectedContentTypes.length > 0) {
@@ -155,7 +166,7 @@ export function TrackingDetail() {
         });
 
         return result;
-    }, [contents, contentSort, selectedContentTypes, selectedCreators, followerMin, followerMax]);
+    }, [contents, contentSort, selectedContentTypes, selectedCreators, followerMin, followerMax, rankingStartDate, rankingEndDate]);
 
     // Paginated Contents
     const paginatedContents = useMemo(() => {
@@ -820,7 +831,7 @@ export function TrackingDetail() {
                     공통 필터 (탭 위)
                 ──────────────────────────────────────────── */}
                 <div className="mb-6 space-y-3">
-                    <h2 className="text-base font-bold text-gray-900">콘텐츠 랭킹 / 크리에이터 랭킹</h2>
+                    <h2 className="text-base font-bold text-gray-900">랭킹</h2>
                     <p className="text-xs text-gray-500">발행된 콘텐츠와 크리에이터 랭킹을 한 눈에 볼 수 있습니다.</p>
 
                     {/* 공통 필터 — 한 줄 compact */}
@@ -830,15 +841,20 @@ export function TrackingDetail() {
                             <svg className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
-                            <select
-                                value={rankingPeriod}
-                                onChange={(e) => { setRankingPeriod(e.target.value); setContentPage(1); setCreatorPage(1); }}
-                                className="text-xs text-gray-700 bg-transparent border-none focus:outline-none cursor-pointer pr-1"
-                            >
-                                {periodOptions.map((opt) => (
-                                    <option key={opt} value={opt}>{opt}</option>
-                                ))}
-                            </select>
+                            <DatePicker
+                                selectsRange={true}
+                                startDate={rankingStartDate}
+                                endDate={rankingEndDate}
+                                onChange={(update) => {
+                                    setRankingDateRange(update as [Date | null, Date | null]);
+                                    setContentPage(1);
+                                    setCreatorPage(1);
+                                }}
+                                locale={ko}
+                                dateFormat="yyyy.MM.dd"
+                                className="text-xs text-gray-700 bg-transparent w-40 focus:outline-none cursor-pointer"
+                                placeholderText="전체 기간"
+                            />
                         </div>
 
                         <div className="w-px h-5 bg-gray-200" />
