@@ -5,8 +5,8 @@ import { cn } from '../lib/utils';
 export function Sidebar() {
     const navItems = [
         { to: '/', icon: LayoutDashboard, label: '대시보드', disabled: true },
-        { to: '/tracking', icon: FileSearch, label: '콘텐츠\n성과' },
         { to: '/creators', icon: Users, label: '크리에이터', disabled: true },
+        { to: '/tracking', icon: FileSearch, label: '콘텐츠\n트래킹' },
     ];
 
     return (
