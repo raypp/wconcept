@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import type { TrackingConfig } from '../lib/types';
-import { Plus, FileSearch } from 'lucide-react';
+import { FileSearch } from 'lucide-react';
 
 export function TrackingList() {
     const [trackings, setTrackings] = useState<TrackingConfig[]>([]);
@@ -60,18 +60,9 @@ export function TrackingList() {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-xl font-bold text-gray-900">콘텐츠 트래킹</h1>
-                    <p className="text-sm text-gray-500 mt-1">등록된 트래킹 캠페인을 관리합니다.</p>
-                </div>
-                <button
-                    onClick={() => navigate('/tracking/new')}
-                    className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-md hover:bg-gray-800 transition-colors"
-                >
-                    <Plus className="h-4 w-4" />
-                    새 트래킹
-                </button>
+            <div>
+                <h1 className="text-xl font-bold text-gray-900">콘텐츠 트래킹</h1>
+                <p className="text-sm text-gray-500 mt-1">등록된 트래킹 캠페인을 관리합니다.</p>
             </div>
 
             {/* Table */}
