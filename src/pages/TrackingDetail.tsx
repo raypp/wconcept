@@ -980,7 +980,7 @@ export function TrackingDetail() {
                     <div>
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-sm font-medium text-gray-700">
-                                전체 콘텐츠 랭킹 Top {filteredAndSortedContents.length}
+                                전체 콘텐츠 랭킹 ({filteredAndSortedContents.length})
                                 {selectedContentIds.size > 0 && (
                                     <span className="ml-2 text-xs text-blue-600 font-normal">{selectedContentIds.size}개 선택됨</span>
                                 )}
@@ -1131,7 +1131,7 @@ export function TrackingDetail() {
                 {activeRankingTab === 'creator' && (
                     <div>
                         <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-sm font-medium text-gray-700">전체 크리에이터 랭킹 Top {sortedCreators.length}</h3>
+                            <h3 className="text-sm font-medium text-gray-700">전체 크리에이터 랭킹 ({sortedCreators.length})</h3>
                             <div className="flex items-center gap-2">
                                 {/* 평균/누적 토글 — 항상 표시 */}
                                 <div className="flex bg-gray-100 p-0.5 rounded-lg">
